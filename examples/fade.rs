@@ -4,9 +4,6 @@ use std::io::Write;
 use std::fs::File;
 use x264::{Encoding, Image, Setup, Preset, Tune};
 
-//TODO: This example.
-//TODO: Figure out what `picture` contains when it's a delayed frame.
-
 fn main() {
     const WIDTH: usize = 1920;
     const HEIGHT: usize = 1080;
