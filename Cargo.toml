@@ -1,0 +1,12 @@
+[package]
+name = "x264"
+description = "Encoding H.264 video."
+keywords = ["x264", "encoding", "h264", "video", "encoder"]
+repository = "https://github.com/quadrupleslap/x264"
+documentation = "https://docs.rs/x264"
+license = "MIT"
+version = "0.1.0"
+authors = ["Ram <quadrupleslap@gmail.com>"]
+
+[dependencies]
+x264-sys = "0.1"
