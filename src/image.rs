@@ -144,7 +144,7 @@ impl<'a> Image<'a> {
     ///
     /// # Unsafety
     ///
-    /// The caller must ensure that there are less than 4 planes,
+    /// The caller must ensure that there are no more than than 4 planes,
     /// and that the number and size of each plane is appropriate for the
     /// given colorspace.
     pub unsafe fn new<'b, C: Into<Colorspace>>(
