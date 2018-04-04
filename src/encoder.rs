@@ -1,4 +1,4 @@
-use {Data, Error, Image, Picture};
+use {Data, Error, Image, Picture, Setup};
 use std::{mem, ptr};
 use x264::*;
 
@@ -9,6 +9,13 @@ pub struct Encoder {
 }
 
 impl Encoder {
+    /// Creates a new builder with default options.
+    ///
+    /// For more customization see `Setup::new`.
+    pub fn builder() -> Setup {
+        Setup::default()
+    }
+
     #[doc(hidden)]
     pub unsafe fn from_raw(raw: *mut x264_t) -> Self {
         let mut params = mem::uninitialized();
