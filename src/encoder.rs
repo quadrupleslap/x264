@@ -1,4 +1,4 @@
-use {Data, Error, Image, Picture, Setup};
+use {Data, Error, Image, Picture, Result, Setup};
 use std::{mem, ptr};
 use x264::*;
 
@@ -30,7 +30,7 @@ impl Encoder {
     /// Panics if there is a mismatch between the image and the encoder
     /// regarding width, height or colorspace.
     pub fn encode(&mut self, pts: i64, image: Image)
-        -> Result<(Data, Picture), Error>
+        -> Result<(Data, Picture)>
     {
         assert_eq!(image.width(), self.params.i_width);
         assert_eq!(image.height(), self.params.i_height);
@@ -46,7 +46,7 @@ impl Encoder {
     /// The caller must ensure that the width, height *and* colorspace
     /// of the image are the same as that of the encoder.
     pub unsafe fn encode_unchecked(&mut self, pts: i64, image: Image)
-        -> Result<(Data, Picture), Error>
+        -> Result<(Data, Picture)>
     {
         let image = image.raw();
 
@@ -77,7 +77,7 @@ impl Encoder {
     }
 
     /// Gets the video headers, which should be sent first.
-    pub fn headers(&mut self) -> Result<Data, Error> {
+    pub fn headers(&mut self) -> Result<Data> {
         let mut len = 0;
         let mut stuff = unsafe { mem::uninitialized() };
 
@@ -135,7 +135,7 @@ pub struct Flush {
 
 impl Flush {
     /// Keeps flushing.
-    pub fn next(&mut self) -> Option<Result<(Data, Picture), Error>> {
+    pub fn next(&mut self) -> Option<Result<(Data, Picture)>> {
         let enc = self.encoder.raw;
 
         if unsafe { x264_encoder_delayed_frames(enc) } == 0 {

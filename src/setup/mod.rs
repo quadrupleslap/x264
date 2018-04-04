@@ -1,4 +1,4 @@
-use {Colorspace, Encoder, Error};
+use {Colorspace, Encoder, Error, Result};
 use std::mem;
 use x264::*;
 
@@ -114,7 +114,7 @@ impl Setup {
         csp: C,
         width: i32,
         height: i32,
-    ) -> Result<Encoder, Error>
+    ) -> Result<Encoder>
     where
         C: Into<Colorspace>,
     {

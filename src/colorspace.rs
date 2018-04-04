@@ -33,7 +33,7 @@ pub enum Encoding {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
-/// A colorspace, which consists of an encoding and some options.
+/// A colorspace, which consists of an encoding and some modifiers.
 pub struct Colorspace {
     raw: i32,
 }
