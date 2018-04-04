@@ -1,4 +1,4 @@
-use {Data, Error, Image, Picture, Result, Setup};
+use {Data, Encoding, Error, Image, Picture, Result, Setup};
 use std::{mem, ptr};
 use x264::*;
 
@@ -11,7 +11,7 @@ pub struct Encoder {
 impl Encoder {
     /// Creates a new builder with default options.
     ///
-    /// For more customization see `Setup::new`.
+    /// For more options see `Setup::new`.
     pub fn builder() -> Setup {
         Setup::default()
     }
@@ -32,12 +32,11 @@ impl Encoder {
     pub fn encode(&mut self, pts: i64, image: Image)
         -> Result<(Data, Picture)>
     {
-        assert_eq!(image.width(), self.params.i_width);
-        assert_eq!(image.height(), self.params.i_height);
-        assert_eq!(image.colorspace(), self.params.i_csp);
+        assert_eq!(image.width(), self.width());
+        assert_eq!(image.height(), self.height());
+        assert_eq!(image.encoding(), self.encoding());
         unsafe { self.encode_unchecked(pts, image) }
     }
-
 
     /// Feeds a frame to the encoder.
     ///
@@ -99,8 +98,8 @@ impl Encoder {
     /// Begins flushing the encoder, to handle any delayed frames.
     ///
     /// ```rust
-    /// # use x264::{Encoding, Setup};
-    /// # let encoder = Setup::default().build(Encoding::RGB, 1920, 1080).unwrap();
+    /// # use x264::{Colorspace, Setup};
+    /// # let encoder = Setup::default().build(Colorspace::RGB, 1920, 1080).unwrap();
     /// #
     /// let mut flush = encoder.flush();
     ///
@@ -118,8 +117,10 @@ impl Encoder {
     pub fn width(&self) -> i32 { self.params.i_width }
     /// The height required of any input images.
     pub fn height(&self) -> i32 { self.params.i_height }
-    /// The colorspace required of any input images.
-    pub fn colorspace(&self) -> i32 { self.params.i_csp }
+    /// The encoding required of any input images.
+    pub fn encoding(&self) -> Encoding {
+        unsafe { Encoding::from_raw(self.params.i_csp) }
+    }
 }
 
 impl Drop for Encoder {

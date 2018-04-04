@@ -1,4 +1,4 @@
-use {Colorspace, Encoder, Error, Result};
+use {Encoder, Encoding, Error, Result};
 use std::mem;
 use x264::*;
 
@@ -59,9 +59,7 @@ impl Setup {
         self
     }
 
-    /// I have no idea what this does.
-    ///
-    /// Please open a pull request if you know what this does!
+    /// Please file an issue if you know what this does, because I have no idea.
     pub fn annexb(mut self, annexb: bool) -> Self {
         self.raw.b_annexb = if annexb { 1 } else { 0 };
         self
@@ -116,9 +114,9 @@ impl Setup {
         height: i32,
     ) -> Result<Encoder>
     where
-        C: Into<Colorspace>,
+        C: Into<Encoding>,
     {
-        self.raw.i_csp = csp.into().into();
+        self.raw.i_csp = csp.into().into_raw();
         self.raw.i_width = width;
         self.raw.i_height = height;
 

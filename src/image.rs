@@ -1,9 +1,7 @@
-use {Colorspace, Encoding};
+use {Colorspace, Encoding, Modifier};
 use std::marker::PhantomData;
 use std::ptr;
 use x264::*;
-
-//TODO: Should I really be using `i32` for everything?
 
 /// Input image data to be given to the encoder.
 pub struct Image<'a> {
@@ -14,157 +12,109 @@ pub struct Image<'a> {
 }
 
 impl<'a> Image<'a> {
-    /// Makes an I420 (YUV 4:2:0) image.
+    /// Makes a new image with the given information.
     ///
     /// # Panics
     ///
-    /// Panics if the width and height are not both even, or if the image
-    /// length is not correct - there must be 12 bits per pixel.
-    pub fn i420(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let half = w / 2;
-        let size = w as usize * h as usize;
-        let brek = size + size / 4;
+    /// Panics if the plane is invalid.
+    pub fn new<E: Into<Encoding>>(
+        format: E,
+        width:  i32,
+        height: i32,
+        planes: &[Plane<'a>],
+    ) -> Self {
+        //TODO: Get someone who knows what they're doing to verify this.
 
-        assert!(w % 2 == 0 && h % 2 == 0);
-        assert_eq!(size * 3/2, img.len());
+        use self::Colorspace::*;
+
+        let format = format.into();
+
+        let (pc, wm, hm, ws, hs): (_, _, _, &[_], &[_]) =
+            match format.colorspace() {
+                I420 | YV12 => (3, 2, 2, &[2, 1, 1], &[2, 1, 1]),
+                NV12 | NV21 => (2, 2, 2, &[2, 2],    &[2, 1]   ),
+                I422 | YV16 => (3, 2, 1, &[2, 1, 1], &[1, 1, 1]),
+                NV16        => (2, 2, 1, &[2, 2],    &[1, 1]   ),
+                YUYV | UYVY => (1, 1, 1, &[2],       &[1]      ),
+                V210        => (1, 1, 1, &[4],       &[1]      ),
+                I444 | YV24 => (3, 1, 1, &[1, 1, 1], &[1, 1, 1]),
+                BGR  | RGB  => (1, 1, 1, &[3],       &[1]      ),
+                BGRA        => (1, 1, 1, &[4],       &[1]      ),
+            };
+
+        let (wq, wr) = (width  / wm, width  % wm);
+        let (hq, hr) = (height / hm, height % hm);
+        let depth    = if format.has(Modifier::HighDepth) { 2 } else { 1 };
+
+        // Check that the number of planes matches pc.
+        assert!(planes.len() == pc);
+        // Check that the width and the height are multiples of wm and hm.
+        assert!(wr == 0 && hr == 0);
+        for (i, plane) in planes.iter().enumerate() {
+            // Check that the plane's stride is at least depth * wq * ws[i].
+            assert!(depth * wq * ws[i] <= plane.stride);
+            // Check that there are at least hq * hs[i] rows in the plane.
+            assert!(hq * hs[i] <= plane.data.len() as i32 / plane.stride);
+        }
 
         unsafe {
-            Self::new(Encoding::I420, w, h, &[
-                Plane { stride: w, plane: &img[..size] },
-                Plane { stride: half, plane: &img[size..brek] },
-                Plane { stride: half, plane: &img[brek..] },
-            ])
+            Self::new_unchecked(format, width, height, planes)
         }
     }
 
-    /// Makes an I422 (YUV 4:2:2) image.
+    /// Makes a new packed BGR image, assuming there is no row padding.
     ///
     /// # Panics
     ///
-    /// Panics if the width is not even, or if the image length is not
-    /// correct - there must be 16 bits per pixel.
-    pub fn i422(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let half = w / 2;
-        let size = w as usize * h as usize;
-        let brek = size + size / 2;
-
-        assert!(w % 2 == 0);
-        assert_eq!(2 * size, img.len());
-
-        unsafe {
-            Self::new(Encoding::I422, w, h, &[
-                Plane { stride: w, plane: &img[..size] },
-                Plane { stride: half, plane: &img[size..brek] },
-                Plane { stride: half, plane: &img[brek..] },
-            ])
-        }
+    /// Panics if there aren't at least 3 bytes per pixel.
+    pub fn bgr(width: i32, height: i32, data: &'a [u8]) -> Self {
+        let plane = Plane { stride: 3 * width, data };
+        Self::new(Colorspace::BGR, width, height, &[plane])
     }
 
-    /// Makes an I444 (YUV 4:4:4) image.
+    /// Makes a new packed RGB image, assuming there is no row padding.
     ///
     /// # Panics
     ///
-    /// Panics if the image length is incorrect - there must be 24 bits per
-    /// pixel.
-    pub fn i444(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let size = w as usize * h as usize;
-        let brek = 2 * size;
-
-        assert_eq!(3 * size, img.len());
-
-        unsafe {
-            Self::new(Encoding::I444, w, h, &[
-                Plane { stride: w, plane: &img[..size] },
-                Plane { stride: w, plane: &img[size..brek] },
-                Plane { stride: w, plane: &img[brek..] },
-            ])
-        }
+    /// Panics if there aren't at least 3 bytes per pixel.
+    pub fn rgb(width: i32, height: i32, data: &'a [u8]) -> Self {
+        let plane = Plane { stride: 3 * width, data };
+        Self::new(Colorspace::RGB, width, height, &[plane])
     }
 
-    /// Makes a BGR image.
+    /// Makes a new packed BGRA image, assuming there is no row padding.
     ///
     /// # Panics
     ///
-    /// Panics if the image length is incorrect - there must be 24 bits per
-    /// pixel.
-    pub fn bgr(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let size = w as usize * h as usize;
-        let stride = 3 * w;
-
-        assert_eq!(3 * size, img.len());
-
-        unsafe {
-            Self::new(Encoding::BGR, w, h, &[
-                Plane { stride, plane: img },
-            ])
-        }
+    /// Panics if there aren't at least 4 bytes per pixel.
+    pub fn bgra(width: i32, height: i32, data: &'a [u8]) -> Self {
+        let plane = Plane { stride: 4 * width, data };
+        Self::new(Colorspace::BGRA, width, height, &[plane])
     }
-
-    /// Makes a BGRA image.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the image length is incorrect - there must be 32 bits per
-    /// pixel.
-    pub fn bgra(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let size = w as usize * h as usize;
-        let stride = 4 * w;
-
-        assert_eq!(4 * size, img.len());
-
-        unsafe {
-            Self::new(Encoding::BGRA, w, h, &[
-                Plane { stride, plane: img },
-            ])
-        }
-    }
-
-    /// Makes a RGB image.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the image length is incorrect - there must be 24 bits per
-    /// pixel.
-    pub fn rgb(w: i32, h: i32, img: &'a [u8]) -> Self {
-        let size = w as usize * h as usize;
-        let stride = 3 * w;
-
-        assert_eq!(3 * size, img.len());
-
-        unsafe {
-            Self::new(Encoding::RGB, w, h, &[
-                Plane { stride, plane: img },
-            ])
-        }
-    }
-
-    // Raw
 
     /// Makes a new image with the given planes and colorspace.
     ///
     /// # Unsafety
     ///
-    /// The caller must ensure that there are no more than than 4 planes,
-    /// and that the number and size of each plane is appropriate for the
-    /// given colorspace.
-    pub unsafe fn new<'b, C: Into<Colorspace>>(
-        csp: C,
-        width: i32,
+    /// The caller must ensure that the plane fulfils all the invariants that
+    /// x264 expects it to fulfil. I don't actually know what all of those are,
+    /// but the source of `Encoder::new` is my best guess.
+    pub unsafe fn new_unchecked(
+        format: Encoding,
+        width:  i32,
         height: i32,
-        planes: &'b [Plane<'a>],
+        planes: &[Plane<'a>],
     ) -> Self {
-        //TODO: Can x264 mutate planes?
-
         let mut strides = [0; 4];
         let mut pointers = [ptr::null_mut(); 4];
 
-        for (i, &Plane { stride, plane }) in planes.iter().enumerate() {
+        for (i, &Plane { stride, data }) in planes.iter().enumerate() {
             strides[i] = stride;
-            pointers[i] = plane.as_ptr() as *mut u8;
+            pointers[i] = data.as_ptr() as *mut u8;
         }
 
         let raw = x264_image_t {
-            i_csp: csp.into().into(),
+            i_csp: format.into_raw(),
             i_plane: planes.len() as i32,
             i_stride: strides,
             plane: pointers,
@@ -179,8 +129,10 @@ impl<'a> Image<'a> {
     pub fn width(&self) -> i32 { self.width }
     /// The height of the image.
     pub fn height(&self) -> i32 { self.height }
-    /// The colorspace of the image.
-    pub fn colorspace(&self) -> i32 { self.raw.i_csp }
+    /// The encoding of the image.
+    pub fn encoding(&self) -> Encoding {
+        unsafe { Encoding::from_raw(self.raw.i_csp) }
+    }
 
     #[doc(hidden)]
     pub fn raw(&self) -> x264_image_t { self.raw }
@@ -191,5 +143,5 @@ pub struct Plane<'a> {
     /// The plane's stride (the number of bytes for each row).
     pub stride: i32,
     /// The plane's pixel data.
-    pub plane: &'a [u8],
+    pub data: &'a [u8],
 }

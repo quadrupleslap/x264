@@ -1,6 +1,6 @@
 use x264::*;
 
-/// Information about an encoded frame.
+/// Output information about an encoded frame.
 pub struct Picture {
     raw: x264_picture_t
 }
