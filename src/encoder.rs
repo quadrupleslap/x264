@@ -128,7 +128,7 @@ impl Drop for Encoder {
     }
 }
 
-/// Processes any delayed frames through a fake iterator.
+/// Iterate through any delayed frames.
 pub struct Flush {
     encoder: Encoder,
 }
