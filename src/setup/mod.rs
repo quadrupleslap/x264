@@ -1,5 +1,5 @@
 use {Encoder, Encoding, Error, Result};
-use std::mem;
+use core::mem;
 use x264::*;
 
 mod preset;

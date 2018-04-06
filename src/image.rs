@@ -1,6 +1,6 @@
 use {Colorspace, Encoding, Modifier};
-use std::marker::PhantomData;
-use std::ptr;
+use core::marker::PhantomData;
+use core::ptr;
 use x264::*;
 
 /// Input image data to be given to the encoder.

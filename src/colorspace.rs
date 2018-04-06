@@ -66,7 +66,7 @@ impl Encoding {
 
     /// Gets the colorspace of the encoding.
     pub fn colorspace(self) -> Colorspace {
-        use std::mem;
+        use core::mem;
         unsafe { mem::transmute(self.raw as u32 % X264_CSP_MAX) }
     }
 

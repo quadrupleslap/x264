@@ -1,5 +1,5 @@
 use {Data, Encoding, Error, Image, Picture, Result, Setup};
-use std::{mem, ptr};
+use core::{mem, ptr};
 use x264::*;
 
 /// Encodes video.

@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
-use std::slice;
+use core::marker::PhantomData;
+use core::slice;
 use x264::*;
 
 //TODO: Iterator over the units.

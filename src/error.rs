@@ -1,4 +1,4 @@
-use std::result;
+use core::result;
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq)]
 /// Indicates that something bad happened.

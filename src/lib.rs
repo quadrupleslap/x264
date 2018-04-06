@@ -1,5 +1,6 @@
 //! An x264 wrapper, so that you can safely encode H.264 video.
 
+#![no_std]
 #![warn(missing_docs)]
 
 extern crate x264_sys;
