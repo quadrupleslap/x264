@@ -20,9 +20,11 @@ pub enum Colorspace {
     NV16 = X264_CSP_NV16,
     /// A single plane whose bytes follow the pattern YUYV pattern, which means
     /// the U and V parts are 2x1 subsampled.
+    #[cfg(feature = "yuyv")]
     YUYV = X264_CSP_YUYV,
     /// A single plane whose bytes follow the pattern UYVY pattern, which means
     /// the U and V parts are 2x1 subsampled.
+    #[cfg(feature = "yuyv")]
     UYVY = X264_CSP_UYVY,
     /// A packed 32-bit UYVY plane with 10-bit components, and 2 padding bits.
     V210 = X264_CSP_V210,
