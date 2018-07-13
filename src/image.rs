@@ -63,33 +63,21 @@ impl<'a> Image<'a> {
         }
     }
 
-    /// Makes a new packed BGR image, assuming there is no row padding.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there aren't at least 3 bytes per pixel.
+    /// Makes a new packed BGR image.
     pub fn bgr(width: i32, height: i32, data: &'a [u8]) -> Self {
-        let plane = Plane { stride: 3 * width, data };
+        let plane = Plane { stride: data.len() as i32 / height, data };
         Self::new(Colorspace::BGR, width, height, &[plane])
     }
 
-    /// Makes a new packed RGB image, assuming there is no row padding.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there aren't at least 3 bytes per pixel.
+    /// Makes a new packed RGB image.
     pub fn rgb(width: i32, height: i32, data: &'a [u8]) -> Self {
-        let plane = Plane { stride: 3 * width, data };
+        let plane = Plane { stride: data.len() as i32 / height, data };
         Self::new(Colorspace::RGB, width, height, &[plane])
     }
 
-    /// Makes a new packed BGRA image, assuming there is no row padding.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there aren't at least 4 bytes per pixel.
+    /// Makes a new packed BGRA image.
     pub fn bgra(width: i32, height: i32, data: &'a [u8]) -> Self {
-        let plane = Plane { stride: 4 * width, data };
+        let plane = Plane { stride: data.len() as i32 / height, data };
         Self::new(Colorspace::BGRA, width, height, &[plane])
     }
 
